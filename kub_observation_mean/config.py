@@ -1,0 +1,20 @@
+timeseries_meta_data = {
+    'Mahapallegama': {'lon_lat': [80.2586, 7.16984],
+                      'run_name': 'A&T Labs',
+                      'variable': 'Precipitation',
+                      'unit': 'mm',
+                      'event_type': 'Observed',
+                      'source': 'WeatherStation'},
+    'Hingurana': {'lon_lat': [80.40782, 6.90449],
+                  'run_name': 'A&T Labs',
+                  'variable': 'Precipitation',
+                  'unit': 'mm',
+                  'event_type': 'Observed',
+                  'source': 'WeatherStation'},
+    'Dickoya': {'lon_lat': [80.60312, 6.8722],
+                'run_name': 'A&T Labs',
+                'variable': 'Precipitation',
+                'unit': 'mm',
+                'event_type': 'Observed',
+                'source': 'WeatherStation'}
+}
