@@ -10,15 +10,15 @@ from kub_observation_mean import KUBObservationMeanUpdator
 from .config import create_app
 
 
-app, db = create_app(models.db)
+trig_api, db = create_app(models.db)
 
 
-@app.route('/')
+@trig_api.route('/')
 def welcome():
     return 'Welcome to the data integration REST service!'
 
 
-@app.route('/trigger/update/kub_obs_mean')
+@trig_api.route('/trigger/update/kub_obs_mean')
 def update_kub_obs_mean():
 
     # "from" should not be None and should be in the valid format.
