@@ -50,7 +50,12 @@ def update_kub_obs_mean():
     force = request.args.get('force')
     force = type(force) is str and force.lower() == 'true'
 
-    kub_mean_updator = KUBObservationMeanUpdator()
-    success, msg = kub_mean_updator.update_kub_mean(start_datetime, end_datetime, force)
+    # "fall_back" can be None. If specified will fall back by removing from the set of considered stations
+    # if a timeseries cannot be found for that particular station.
+    fall_back = request.args.get('fall_back')
+    fall_back = type(fall_back) is str and fall_back.lower() == 'true'
+
+    kub_mean_updator = KUBObservationMeanUpdator(db)
+    success, msg = kub_mean_updator.update_kub_mean(start_datetime, end_datetime, fall_back, force)
 
     return msg, status.HTTP_200_OK if success else status.HTTP_500_INTERNAL_SERVER_ERROR

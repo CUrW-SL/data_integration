@@ -2,11 +2,13 @@ import copy
 import numpy as np
 import pandas as pd
 
+from sqlalchemy import exc as SqlAlchemyExecptions
+
 from curw.rainfall.wrf.extraction.spatial_utils import get_voronoi_polygons
 from curw.rainfall.wrf.resources import manager as res_mgr
 from data_layer.retrieval import Timeseries
 
-from .config import timeseries_meta_data
+from .config import timeseries_meta_data,  kub_mean_timeseries_meta
 
 
 class KUBObservationMean:
@@ -117,11 +119,11 @@ class KUBObservationMean:
 
 
 class KUBObservationMeanUpdator:
-    def __init__(self):
-        pass
+    def __init__(self, db):
+        self.db = db
 
-    def update_kub_mean(self, start_datetime, end_datetime, is_forced):
-        tms = Timeseries()
+    def update_kub_mean(self, start_datetime, end_datetime, should_fallback=True, is_forced=False):
+        tms = Timeseries(self.db)
         timeseries_data = copy.deepcopy(timeseries_meta_data)
         failed_stations = []
         for station in timeseries_data.keys():
@@ -134,13 +136,13 @@ class KUBObservationMeanUpdator:
                                                   source=timeseries_meta['source'])
             # Checks consistency of obtained timeseries_ids.
             if len(timeseries_id) <= 0:
-                if is_forced:
+                if should_fallback:
                     failed_stations.append(station)
                     continue
                 else:
                     return False, 'No timeseries_id found for station: %s' % station
             elif len(timeseries_id) > 1:
-                if is_forced:
+                if should_fallback:
                     failed_stations.append(station)
                     continue
                 else:
@@ -150,7 +152,7 @@ class KUBObservationMeanUpdator:
             timeseries = tms.get_timeseries(timeseries_id=timeseries_id[0], start_date=start_datetime, end_date=end_datetime)
             # Checks consistency of obtained timeseries.
             if len(timeseries) <= 0:
-                if is_forced:
+                if should_fallback:
                     failed_stations.append(station)
                     continue
                 else:
@@ -170,10 +172,25 @@ class KUBObservationMeanUpdator:
         # Calculate KUB Observation Mean.
         kub_obs_mean = KUBObservationMean()
         kub_mean_timeseries, station_fractions = kub_obs_mean.calc_kub_mean(timeseries_data)
-        print(kub_mean_timeseries, station_fractions)
+        kub_mean_timeseries = kub_mean_timeseries.to_frame(name='value')
 
         # Store calculated KUB Observation Mean.
-        # TODO
+        try:
+            kub_mean_timeseries_id = tms.get_timeseries_id(run_name=kub_mean_timeseries_meta['run_name'],
+                                                           station_name=kub_mean_timeseries_meta['station_name'],
+                                                           variable=kub_mean_timeseries_meta['variable'],
+                                                           unit=kub_mean_timeseries_meta['unit'],
+                                                           event_type=kub_mean_timeseries_meta['event_type'],
+                                                           source=kub_mean_timeseries_meta['source'])
+            tms.update_timeseries(kub_mean_timeseries_id[0], kub_mean_timeseries, is_forced)
+        except SqlAlchemyExecptions.OperationalError:
+            return False, 'DB connection error occurred during the operation. Please try again later.'
+        except SqlAlchemyExecptions.IntegrityError:
+            return False, 'To overwrite make force enabled by specifying force request param'
 
-        return True, 'Successfully updated KUB observation mean.'
-        # return False, 'Failed to update KUB observation mean.'
+        # Prepare success response.
+        st_frc = ''
+        for st, frc in station_fractions.items():
+            st_frc += st_frc.join(" " + st + ":" + str(frc) + '%')
+        response_content = 'Successfully updated KUB observation mean with station fractions of, { %s }' % st_frc
+        return True, response_content
