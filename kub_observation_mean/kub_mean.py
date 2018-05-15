@@ -189,8 +189,8 @@ class KUBObservationMeanUpdator:
             return False, 'To overwrite make force enabled by specifying force request param'
 
         # Prepare success response.
-        st_frc = ''
+        st_frc = ""
         for st, frc in station_fractions.items():
-            st_frc += st_frc.join(" " + st + ":" + str(frc) + '%')
+            st_frc += " " + st + ":" + str(frc) + "%"
         response_content = 'Successfully updated KUB observation mean with station fractions of, { %s }' % st_frc
         return True, response_content
