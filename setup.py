@@ -10,8 +10,8 @@ setup(
     author_email='madumalt@gamil.com',
     description='Data integration system for CUrW project managed under Mega Polis Ministry, Sri Lanka',
     include_package_data=True,
-    requires=['numpy', 'geopandas', 'scipy', 'shapely', 'curw'],
-    install_requires=['curw'],
+    # install_requires=['uwsgi', 'Flask', 'Flask-API', 'flask-sqlalchemy', 'pytz', 'pandas', 'numpy', 'geopandas',
+    #                   'scipy', 'shapely', 'curw'],
     dependency_links=['https://github.com/nirandaperera/models/tarball/v2.0.0-snapshot-dev#egg=curw-2.0.0-snapshot'],
     zip_safe=False
 )
