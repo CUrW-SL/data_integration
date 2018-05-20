@@ -32,3 +32,5 @@ SQLAlchemy==1.2.7
 uWSGI==2.0.17
 Werkzeug==0.14.1
 ```
+
+http://104.198.0.87:5005/trigger/update/kub_obs_mean?fall_back=true&force=true&from=2018-05-10%2000:00:00&to=2018-05-16%2000:00:00

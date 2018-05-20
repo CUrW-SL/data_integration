@@ -1,14 +1,48 @@
 import pandas as pd
+import hashlib
+import json
 
 from datetime import datetime
 
-from data_layer.models import Data, RunView
+from data_layer.models import Data, Run, RunView
 from data_layer.constants import COMMON_DATETIME_FORMAT
 
 
 class Timeseries:
     def __init__(self, db):
         self.db = db
+
+    @staticmethod
+    def generate_timeseries_id(meta_data):
+        """
+        Generate the event id for given meta data
+        NOTE: Only 'station', 'variable', 'unit', 'type', 'source', 'name' fields use to generate hash value.
+        To create event_id need to have all the required keys as the presented in the following example.
+        {
+            'station': 'Hanwella',
+            'variable': 'Discharge',
+            'unit': 'm3/s',
+            'type': 'Forecast',
+            'source': 'HEC-HMS',
+            'name': 'Cloud Continuous'
+        }
+        :param meta_data: Dict with 'station', 'variable', 'unit', 'type', 'source', 'name' keys.
+        :return: str: sha256 hash value in hex format (length of 64 characters).
+        """
+        sha256 = hashlib.sha256()
+        hash_data = {
+            'station': '',
+            'variable': '',
+            'unit': '',
+            'type': '',
+            'source': '',
+            'name': ''
+        }
+        for key in hash_data.keys():
+            hash_data[key] = meta_data[key]
+        sha256.update(json.dumps(hash_data, sort_keys=True).encode("ascii"))
+        event_id = sha256.hexdigest()
+        return event_id
 
     def get_timeseries_id(self, run_name, station_name, variable, unit, event_type, source):
         result = RunView.query.filter_by(name=run_name,
@@ -19,6 +53,25 @@ class Timeseries:
                                          source=source
                                          ).all()
         return [run_view_obj.id for run_view_obj in result]
+
+    def create_timeseries_id(self, run_name, station, variable, unit, event_type, source):
+        tms_meta = {'station': station['name'],
+                    'variable': variable['name'],
+                    'unit': unit['name'],
+                    'type': event_type['name'],
+                    'source': source['name'],
+                    'name': run_name}
+        tms_id = Timeseries.generate_timeseries_id(tms_meta)
+        run = Run(id=tms_id,
+                  name=run_name,
+                  station=station['id'],
+                  variable=variable['id'],
+                  unit=unit['id'],
+                  type=event_type['id'],
+                  source=source['id'])
+        self.db.session.add(run)
+        self.db.session.commit()
+        return [tms_id]
 
     def get_timeseries(self, timeseries_id, start_date, end_date):
         """

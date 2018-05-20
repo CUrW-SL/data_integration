@@ -91,7 +91,7 @@ class KUBObservationMean:
             matrix = timerseries_list[0].join(other=timerseries_list[1:len(timerseries_list)], how='outer')
 
         # Note:
-        # After joining resampling+sum does not work properly. Gives NaN andsum is not correct.
+        # After joining resampling+sum does not work properly. Gives NaN and sum that is not correct.
         # Therefore resamplig+sum is done for each timeseries. If this issue could be solved,
         # then resampling+sum could be carried out after joining.
 
