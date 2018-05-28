@@ -6,7 +6,7 @@ from flask_api import status
 from data_layer import models
 from data_layer.constants import COMMON_DATETIME_FORMAT
 from kub_observation_mean import KUBObservationMeanUpdator
-from klb_bias_correction import KLBBiasCorrector, wrf_models, klb_quadrants
+from klb_bias_correction import KLBBiasCorrector, wrf_models, klb_qaudrants
 
 from .config import create_app
 
@@ -16,7 +16,7 @@ trig_api, db = create_app(models.db)
 
 @trig_api.route('/')
 def welcome():
-    return 'Welcome to the data integration REST service!'
+    return 'Welcome to the CUrW data integration REST service!'
 
 
 @trig_api.route('/trigger/update/kub_obs_mean')
@@ -27,7 +27,6 @@ def update_kub_obs_mean():
     - to        date-time
     - fall_back boolean
     - force     boolean
-    :return:
     """
 
     # "from" should not be None and should be in the valid format.
@@ -35,7 +34,7 @@ def update_kub_obs_mean():
     try:
         start_datetime = datetime.strptime(start_datetime, COMMON_DATETIME_FORMAT)
     except (TypeError, ValueError):
-        error_msg = 'Invalid start_date. Should be a valid date of "YYYY-mm-dd HH:MM:SS" format.'
+        error_msg = 'Invalid start_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
         return error_msg, status.HTTP_400_BAD_REQUEST
 
     # "to" can be None, if None default to server current time in IST. If specified should be in the valid format.
@@ -46,7 +45,7 @@ def update_kub_obs_mean():
         try:
             end_datetime = datetime.strptime(end_datetime, COMMON_DATETIME_FORMAT)
         except ValueError:
-            error_msg = 'Invalid end_date. Should be a valid date of "YYYY-mm-dd HH:MM:SS" format.'
+            error_msg = 'Invalid end_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
             return error_msg, status.HTTP_400_BAD_REQUEST
 
     # "from" should be < "to"
@@ -72,12 +71,21 @@ def update_kub_obs_mean():
 
 @trig_api.route('/trigger/update/klb_error_scales')
 def update_klb_error_scales():
+    """
+    request params
+    - from      date-time
+    - to        date-time
+    - force     boolean
+    - model     one of ['wrf0', 'wrf1', 'wrf2', 'wrf3', 'wrf4', 'wrf5']
+    - qaudrant  one of ['met_col0', 'met_col1', 'met_col2', 'met_col3']
+    """
+
     # "from" should not be None and should be in the valid format.
     start_datetime = request.args.get('from')
     try:
         start_datetime = datetime.strptime(start_datetime, COMMON_DATETIME_FORMAT)
     except (TypeError, ValueError):
-        error_msg = 'Invalid start_date. Should be a valid date of "YYYY-mm-dd HH:MM:SS" format.'
+        error_msg = 'Invalid start_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
         return error_msg, status.HTTP_400_BAD_REQUEST
 
     # "to" can be None, if None default to server current time in IST. If specified should be in the valid format.
@@ -88,7 +96,7 @@ def update_klb_error_scales():
         try:
             end_datetime = datetime.strptime(end_datetime, COMMON_DATETIME_FORMAT)
         except ValueError:
-            error_msg = 'Invalid end_date. Should be a valid date of "YYYY-mm-dd HH:MM:SS" format.'
+            error_msg = 'Invalid end_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
             return error_msg, status.HTTP_400_BAD_REQUEST
 
     # "from" should be < "to"
@@ -102,14 +110,68 @@ def update_klb_error_scales():
     force = type(force) is str and force.lower() == 'true'
 
     model = request.args.get('model')
-    quadrant = request.args.get('quadrant')
+    quadrant = request.args.get('qaudrant')
     if model not in wrf_models:
         error_msg = 'Given model name is not a valid wrf model.'
         return error_msg, status.HTTP_400_BAD_REQUEST
-    if quadrant not in klb_quadrants:
+    if quadrant not in klb_qaudrants:
         error_msg = 'Given quadrant name is not a valid KLB quadrant'
         return error_msg, status.HTTP_400_BAD_REQUEST
 
     klb_bias_corrector = KLBBiasCorrector(db)
     success, msg = klb_bias_corrector.calc_error_scale(model, quadrant, start_datetime, end_datetime, 'H', force)
+    return msg, status.HTTP_200_OK if success else status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+@trig_api.route('/trigger/klb_bias_correction')
+def klb_bias_correction():
+    """
+    request params
+    - from      date-time
+    - to        date-time
+    - force     boolean
+    - model     one of ['wrf0', 'wrf1', 'wrf2', 'wrf3', 'wrf4', 'wrf5']
+    - qaudrant  one of ['met_col0', 'met_col1', 'met_col2', 'met_col3']
+    """
+
+    # "from" should not be None and should be in the valid format.
+    start_datetime = request.args.get('from')
+    try:
+        start_datetime = datetime.strptime(start_datetime, COMMON_DATETIME_FORMAT)
+    except (TypeError, ValueError):
+        error_msg = 'Invalid start_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
+        return error_msg, status.HTTP_400_BAD_REQUEST
+
+    # "to" can be None, if None default to server current time in IST. If specified should be in the valid format.
+    end_datetime = request.args.get('to')
+    if end_datetime is None or end_datetime == '':
+        end_datetime = datetime.now(tz=pytz.timezone('Asia/Colombo'))
+    else:
+        try:
+            end_datetime = datetime.strptime(end_datetime, COMMON_DATETIME_FORMAT)
+        except ValueError:
+            error_msg = 'Invalid end_date. Should be a valid date of %s format.' % COMMON_DATETIME_FORMAT
+            return error_msg, status.HTTP_400_BAD_REQUEST
+
+    # "from" should be < "to"
+    if start_datetime >= end_datetime:
+        error_msg = 'Invalid time period.'
+        return error_msg, status.HTTP_400_BAD_REQUEST
+
+    # "force" can be None. If specified even if the KLB error scales timeseries are already exists
+    # for the given time period, will calculate and update the timeseries.
+    force = request.args.get('force')
+    force = type(force) is str and force.lower() == 'true'
+
+    model = request.args.get('model')
+    quadrant = request.args.get('qaudrant')
+    if model not in wrf_models:
+        error_msg = 'Given model name is not a valid wrf model.'
+        return error_msg, status.HTTP_400_BAD_REQUEST
+    if quadrant not in klb_qaudrants:
+        error_msg = 'Given quadrant name is not a valid KLB quadrant'
+        return error_msg, status.HTTP_400_BAD_REQUEST
+
+    klb_bias_corrector = KLBBiasCorrector(db)
+    success, msg = klb_bias_corrector.bias_correct(model, quadrant, start_datetime, end_datetime, 'H', force)
     return msg, status.HTTP_200_OK if success else status.HTTP_500_INTERNAL_SERVER_ERROR

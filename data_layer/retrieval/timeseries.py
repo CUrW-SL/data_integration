@@ -79,8 +79,8 @@ class Timeseries:
         time is in between given start_date (inclusive) and end_date (exclusive).
 
         :param timeseries_id: string timeseries id
-        :param start_date: datetime or string, should be of %s format
-        :param end_date: datetime or string, should be of %s format
+        :param start_date: datetime object
+        :param end_date: datetime object
         :return: array of [id, time, value]
         """
 
