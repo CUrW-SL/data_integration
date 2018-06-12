@@ -6,7 +6,7 @@ from sqlalchemy import exc as SqlAlchemyExecptions
 
 from curw.rainfall.wrf.extraction.spatial_utils import get_voronoi_polygons
 from curw.rainfall.wrf.resources import manager as res_mgr
-from data_layer.retrieval import Timeseries
+from data_layer.timeseries import Timeseries
 
 from .config import timeseries_meta_data,  kub_mean_timeseries_meta
 

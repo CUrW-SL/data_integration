@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from data_layer.retrieval import Timeseries
+from data_layer.timeseries import Timeseries
 from data_layer.exceptions import InconsistencyError
 
 from .config import qaudrant_obs_tms_meta, get_frcst_mean_tms_meta, forecast_types
