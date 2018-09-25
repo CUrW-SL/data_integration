@@ -31,7 +31,7 @@ for index, value in timedelta_index.iteritems():
     end = start + timedelta(hours=1, minutes=30)
     end = end if end_datetime >= end else end_datetime
 
-    if start > end:
+    if end > start:
         tmp_url = url % (start.strftime(DATE_TIME_FORMAT), end.strftime(DATE_TIME_FORMAT))
         print(tmp_url)
         print(request.urlopen(tmp_url).read())
