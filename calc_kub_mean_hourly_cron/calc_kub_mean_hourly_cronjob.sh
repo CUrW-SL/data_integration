@@ -33,7 +33,7 @@ echo "Running calc_kub_mean_hourly_script.py. Logs Available in calc_hourly_kub_
 #  >>file.txt: Open file.txt in append mode and redirect stdout there.
 #  2>&1: Redirect stderr to "where stdout is currently going". In this case, that is a file opened in append mode.
 #In other words, the &1 reuses the file descriptor which stdout currently uses.
-python calc_hourly_kub_mean.log >> calc_hourly_kub_mean.log 2>&1
+python calc_kub_mean_hourly_script.py >> calc_hourly_kub_mean.log 2>&1
 
 # Deactivating virtual environment
 echo "Deactivating virtual environment"
