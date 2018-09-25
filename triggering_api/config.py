@@ -3,10 +3,10 @@ from flask import Flask
 
 db_config = {
     'connector': 'pymysql',
-    'host': "104.198.0.87",
+    'host': "",
     'port': 3306,
     'user': "curw_user",
-    'password': "curw",
+    'password': "",
     'db': "curw"
 }
 
